@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="or">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator - Standard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS CDN for P2P connection -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <!-- QR Code Generator & Scanner Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .hide { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- CALCULATOR DISGUISE SCREEN (Default Cover) -->
+    <div id="calculator-screen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col justify-end p-6 max-w-md mx-auto">
+        <div class="text-right mb-6">
+            <div id="calc-history" class="text-slate-500 text-sm h-6"></div>
+            <div id="calc-display" class="text-5xl font-bold text-white tracking-wider">0</div>
+        </div>
+        <div class="grid grid-cols-4 gap-3">
+            <button onclick="calcBtn('C')" class="p-4 bg-slate-800 text-rose-400 font-bold rounded-2xl text-xl">C</button>
+            <button onclick="calcBtn('del')" class="p-4 bg-slate-800 text-slate-300 font-bold rounded-2xl text-xl"><i class="fa-solid fa-delete-left"></i></button>
+            <button onclick="calcBtn('%')" class="p-4 bg-slate-800 text-slate-300 font-bold rounded-2xl text-xl">%</button>
+            <button onclick="calcBtn('/')" class="p-4 bg-rose-600/30 text-rose-400 font-bold rounded-2xl text-xl">÷</button>
+            
+            <button onclick="calcBtn('7')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">7</button>
+            <button onclick="calcBtn('8')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">8</button>
+            <button onclick="calcBtn('9')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">9</button>
+            <button onclick="calcBtn('*')" class="p-4 bg-rose-600/30 text-rose-400 font-bold rounded-2xl text-xl">×</button>
+            
+            <button onclick="calcBtn('4')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">4</button>
+            <button onclick="calcBtn('5')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">5</button>
+            <button onclick="calcBtn('6')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">6</button>
+            <button onclick="calcBtn('-')" class="p-4 bg-rose-600/30 text-rose-400 font-bold rounded-2xl text-xl">-</button>
+            
+            <button onclick="calcBtn('1')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">1</button>
+            <button onclick="calcBtn('2')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">2</button>
+            <button onclick="calcBtn('3')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">3</button>
+            <button onclick="calcBtn('+')" class="p-4 bg-rose-600/30 text-rose-400 font-bold rounded-2xl text-xl">+</button>
+            
+            <button onclick="calcBtn('0')" class="col-span-2 p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl text-left pl-6">0</button>
+            <button onclick="calcBtn('.')" class="p-4 bg-slate-900 text-white font-bold rounded-2xl text-xl">.</button>
+            <button onclick="calcBtn('=')" class="p-4 bg-rose-600 text-white font-bold rounded-2xl text-xl">=</button>
+        </div>
+    </div>
+
+    <!-- PASSCODE OVERLAY -->
+    <div id="passcode-screen" class="fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-6 hide">
+        <div class="w-full max-w-sm bg-slate-900 p-8 rounded-3xl border border-rose-500/20 text-center shadow-2xl">
+            <div class="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-rose-400 text-2xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h2 class="text-xl font-bold mb-1 text-white">ଗୁପ୍ତ ଷ୍ଟୁଡ଼ିଓ ୮.୦</h2>
+            <p class="text-xs text-slate-400 mb-6">ଅନଲକ୍ କରିବା ପାଇଁ ପାସକୋଡ୍ ଦିଅନ୍ତୁ</p>
+            <input type="password" id="passcode-input" placeholder="••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-center text-2xl tracking-widest text-white mb-4 focus:outline-none focus:border-rose-500">
+            <button onclick="verifyPasscode()" class="w-full py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition">ଷ୍ଟୁଡ଼ିଓ ଖୋଲନ୍ତୁ</button>
+        </div>
+    </div>
+
+    <!-- MAIN APP INTERFACE -->
+    <div id="main-app" class="flex-1 flex flex-col max-w-md mx-auto w-full p-4 hide">
+        <!-- Header -->
+        <header class="flex justify-between items-center py-3 mb-4 border-b border-slate-800">
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 bg-rose-500 rounded-full animate-pulse"></div>
+                <h1 class="font-bold text-rose-400 tracking-wide text-sm">ଲଭ୍ ସିଙ୍କ୍ ଷ୍ଟୁଡ଼ିଓ</h1>
+            </div>
+            <button onclick="lockApp()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-medium text-slate-300 transition">
+                <i class="fa-solid fa-shield-halved mr-1"></i> ଲକ୍ କରନ୍ତୁ
+            </button>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="grid grid-cols-4 gap-2 mb-4 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+            <button onclick="switchTab('vault')" id="tab-btn-vault" class="py-2 rounded-xl text-xs font-semibold text-rose-400 bg-slate-800 transition">ଭଲ୍ଟ୍</button>
+            <button onclick="switchTab('chat')" id="tab-btn-chat" class="py-2 rounded-xl text-xs font-semibold text-slate-400 transition">ଚାଟ୍</button>
+            <button onclick="switchTab('call')" id="tab-btn-call" class="py-2 rounded-xl text-xs font-semibold text-slate-400 transition">କଲ୍</button>
+            <button onclick="switchTab('game')" id="tab-btn-game" class="py-2 rounded-xl text-xs font-semibold text-slate-400 transition">ଗେମ୍</button>
+        </div>
+
+        <!-- TAB 1: MOOD VAULT -->
+        <div id="tab-vault" class="space-y-4">
+            <div class="flex gap-2 overflow-x-auto pb-2">
+                <button onclick="selectMood('romantic')" class="mood-btn px-4 py-2 bg-rose-600 text-white text-xs rounded-xl font-bold whitespace-nowrap">ରୋମାଣ୍ଟିକ</button>
+                <button onclick="selectMood('wild')" class="mood-btn px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-bold whitespace-nowrap">ୱାଇଲ୍ଡ</button>
+                <button onclick="selectMood('secret')" class="mood-btn px-4 py-2 bg-slate-800 text-slate-300 text-xs rounded-xl font-bold whitespace-nowrap">ସିକ୍ରେଟ୍</button>
+            </div>
+            <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 text-center">
+                <input type="file" id="media-input" accept="image/*,video/*" class="hidden" onchange="handleMediaUpload(event)">
+                <button onclick="document.getElementById('media-input').click()" class="w-full py-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold rounded-xl border border-dashed border-rose-500/30 transition text-sm">
+                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> ଫଟୋ ବା ଭିଡିଓ ଅପଲୋଡ୍ କରନ୍ତୁ
+                </button>
+            </div>
+            <div id="media-grid" class="grid grid-cols-2 gap-3 pb-6"></div>
+        </div>
+
+        <!-- TAB 2: P2P CHAT -->
+        <div id="tab-chat" class="flex flex-col flex-1 hide">
+            <div id="chat-messages" class="flex-1 bg-slate-900/50 rounded-2xl border border-slate-800 p-3 h-80 overflow-y-auto mb-3 space-y-2 text-sm">
+                <div class="text-center text-xs text-slate-500 my-2">ଚାଟ୍ ଆରମ୍ଭ କରିବା ପାଇଁ କନେକ୍ଟ କରନ୍ତୁ</div>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="chat-input" placeholder="କିଛି ଲେଖନ୍ତୁ..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500">
+                <button onclick="sendChatMessage()" class="px-5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold transition"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <!-- TAB 3: P2P VIDEO CALL & 6-DIGIT PIN CONNECT -->
+        <div id="tab-call" class="space-y-4 hide">
+            <!-- 6-Digit PIN & QR Connection Section -->
+            <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
+                <p class="text-xs text-slate-400 font-medium">ଆପଣଙ୍କର ୬-ଅଙ୍କ ବିଶିଷ୍ଟ ଗୁପ୍ତ PIN:</p>
+                <div class="flex gap-2">
+                    <input type="text" id="my-6digit-pin" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-center text-lg text-rose-400 font-bold font-mono tracking-widest">
+                    <button onclick="copyMyPin()" class="px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs"><i class="fa-solid fa-copy"></i></button>
+                </div>
+                <!-- QR Code Display Box -->
+                <div class="flex justify-center py-2">
+                    <div id="qrcode" class="bg-white p-2 rounded-xl"></div>
+                </div>
+            </div>
+
+            <!-- Partner 6-Digit PIN Connect & QR Scanner -->
+            <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
+                <p class="text-xs text-slate-400 font-medium">ସାଥୀଙ୍କ ୬-ଅଙ୍କ PIN ଦିଅନ୍ତୁ:</p>
+                <div class="flex gap-2">
+                    <input type="text" id="partner-6digit-pin" maxlength="6" placeholder="ଜେମିତି: 749281" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-center text-lg text-white font-mono tracking-widest focus:outline-none focus:border-rose-500">
+                    <button onclick="connectWithPin()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs transition">କନେକ୍ଟ</button>
+                </div>
+                <button onclick="startScanner()" class="w-full py-2 bg-pink-600/20 text-pink-400 border border-pink-500/30 font-bold rounded-xl text-xs transition"><i class="fa-solid fa-qrcode mr-1"></i> QR କୋଡ୍ ସ୍କାନ୍ କରନ୍ତୁ</button>
+                <!-- Scanner Viewport -->
+                <div id="reader" class="w-full rounded-xl overflow-hidden hide"></div>
+            </div>
+
+            <!-- Video Call Controls & Feeds -->
+            <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
+                <div class="grid grid-cols-2 gap-3 h-40 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800">
+                    <video id="local-video" autoplay muted playsinline class="w-full h-full object-cover"></video>
+                    <video id="remote-video" autoplay playsinline class="w-full h-full object-cover"></video>
+                </div>
+                <!-- Call Action Buttons -->
+                <div class="grid grid-cols-5 gap-1.5">
+                    <button onclick="startVideoCall()" class="py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition" title="କଲ୍ ଆରମ୍ଭ କରନ୍ତୁ"><i class="fa-solid fa-video"></i></button>
+                    <button onclick="toggleMic()" id="mic-btn" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition" title="ମାଇକ୍ ଅଫ୍/ଅନ୍"><i class="fa-solid fa-microphone"></i></button>
+                    <button onclick="toggleCam()" id="cam-btn" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition" title="କ୍ୟାମେରା ଅଫ୍/ଅନ୍"><i class="fa-solid fa-video-slash"></i></button>
+                    <button onclick="flipCamera()" class="py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition" title="କ୍ୟାମେରା ବଦଳାନ୍ତୁ"><i class="fa-solid fa-camera-rotate"></i></button>
+                    <button onclick="disconnectCall()" class="py-2.5 bg-red-600/40 hover:bg-red-600/60 text-red-300 rounded-xl text-xs font-bold transition" title="କଲ୍ କାଟନ୍ତୁ"><i class="fa-solid fa-phone-slash"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: INTIMATE GAME WITH VISUAL IMAGES/ICONS -->
+        <div id="tab-game" class="space-y-4 hide">
+            <div class="p-6 bg-slate-900 rounded-2xl border border-rose-500/25 text-center space-y-4">
+                <span id="game-category" class="text-xs px-3 py-1 bg-rose-500/20 text-rose-300 rounded-full font-semibold">ପ୍ରେମୀ ଯୁଗଳ ସତ୍ୟ ବା କାମ</span>
+                <!-- Visual Icon Container -->
+                <div id="game-icon-container" class="w-20 h-20 bg-rose-500/10 rounded-2xl mx-auto flex items-center justify-center text-rose-400 text-3xl border border-rose-500/20 shadow-inner">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                </div>
+                <p id="game-question" class="text-base text-slate-200 font-medium min-h-[70px] flex items-center justify-center">କାର୍ଡ ଟାଣିବା ପାଇଁ ତଳ ବଟନ୍ ଦାବନ୍ତୁ!</p>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="drawGameCard('truth')" class="flex-1 py-3 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition text-sm">ସତ୍ୟ (Truth)</button>
+                    <button onclick="drawGameCard('dare')" class="flex-1 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition text-sm">ସାହସ (Dare)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        let calcExpr = "";
+        function calcBtn(val) {
+            const display = document.getElementById("calc-display");
+            if (val === 'C') {
+                calcExpr = "";
+                display.innerText = "0";
+            } else if (val === 'del') {
+                calcExpr = calcExpr.slice(0, -1);
+                display.innerText = calcExpr || "0";
+            } else if (val === '=') {
+                if (calcExpr === "784908") {
+                    showPasscodeScreen();
+                    return;
+                }
+                try {
+                    display.innerText = eval(calcExpr);
+                    calcExpr = display.innerText;
+                } catch {
+                    display.innerText = "Error";
+                    calcExpr = "";
+                }
+            } else {
+                calcExpr += val;
+                display.innerText = calcExpr;
+            }
+        }
+
+        function showPasscodeScreen() {
+            document.getElementById("calculator-screen").classList.add("hide");
+            document.getElementById("passcode-screen").classList.remove("hide");
+        }
+
+        function verifyPasscode() {
+            const pin = document.getElementById("passcode-input").value;
+            if (pin === "784908") {
+                document.getElementById("passcode-screen").classList.add("hide");
+                document.getElementById("main-app").classList.remove("hide");
+                initPeer();
+                loadMedia('romantic');
+            } else {
+                alert("ଭୁଲ୍ ପାସକୋଡ୍! ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।");
+            }
+        }
+
+        function lockApp() {
+            document.getElementById("main-app").classList.add("hide");
+            document.getElementById("calculator-screen").classList.remove("hide");
+            document.getElementById("passcode-input").value = "";
+            calcExpr = "";
+            document.getElementById("calc-display").innerText = "0";
+        }
+
+        function switchTab(tab) {
+            ['vault', 'chat', 'call', 'game'].forEach(t => {
+                document.getElementById('tab-' + t).classList.add('hide');
+                document.getElementById('tab-btn-' + t).classList.remove('bg-slate-800', 'text-rose-400');
+                document.getElementById('tab-btn-' + t).classList.add('text-slate-400');
+            });
+            document.getElementById('tab-' + tab).classList.remove('hide');
+            document.getElementById('tab-btn-' + tab).classList.add('bg-slate-800', 'text-rose-400');
+            document.getElementById('tab-btn-' + tab).classList.remove('text-slate-400');
+        }
+
+        // Vault Logic
+        let currentMood = 'romantic';
+        let mediaVault = JSON.parse(localStorage.getItem('lovesync_vault') || '{}');
+
+        function selectMood(mood) {
+            currentMood = mood;
+            document.querySelectorAll('.mood-btn').forEach(btn => {
+                btn.classList.remove('bg-rose-600', 'text-white');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            event.target.classList.add('bg-rose-600', 'text-white');
+            event.target.classList.remove('bg-slate-800', 'text-slate-300');
+            loadMedia(mood);
+        }
+
+        function handleMediaUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (!mediaVault[currentMood]) mediaVault[currentMood] = [];
+                mediaVault[currentMood].push({ type: file.type.startsWith('video') ? 'video' : 'image', data: e.target.result });
+                localStorage.setItem('lovesync_vault', JSON.stringify(mediaVault));
+                loadMedia(currentMood);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadMedia(mood) {
+            const grid = document.getElementById('media-grid');
+            grid.innerHTML = '';
+            const items = mediaVault[mood] || [];
+            if (items.length === 0) {
+                grid.innerHTML = '<div class="col-span-2 text-center text-xs text-slate-500 py-6">ଏଠାରେ କୌଣସି ଫାଇଲ୍ ନାହିଁ।</div>';
+                return;
+            }
+            items.forEach((item) => {
+                const div = document.createElement('div');
+                div.className = 'relative aspect-square rounded-xl overflow-hidden bg-slate-950 border border-slate-800';
+                if (item.type === 'video') {
+                    div.innerHTML = `<video src="${item.data}" controls class="w-full h-full object-cover"></video>`;
+                } else {
+                    div.innerHTML = `<img src="${item.data}" class="w-full h-full object-cover">`;
+                }
+                grid.appendChild(div);
+            });
+        }
+
+        // P2P / PeerJS & 6-Digit PIN Logic
+        let peer, conn, localStream, currentCall;
+        let my6DigitPin = "";
+        let isMicMuted = false;
+        let isCamOff = false;
+        let useFrontCamera = true;
+
+        function initPeer() {
+            // Generate a random 6-digit PIN for easy connection
+            my6DigitPin = Math.floor(100000 + Math.random() * 900000).toString();
+            document.getElementById('my-6digit-pin').value = my6DigitPin;
+
+            // Initialize Peer with custom 6-digit ID prefix
+            peer = new Peer("lovesync_" + my6DigitPin);
+            
+            peer.on('open', id => {
+                generateQRCode(id);
+            });
+            peer.on('connection', c => {
+                conn = c;
+                setupConnection();
+                alert("ସାଥୀଙ୍କ ସହିତ ସଫଳ କନେକ୍ସନ୍ ହେଲା!");
+            });
+            peer.on('call', call => {
+                if(confirm("ଇନକମିଂ ଭିଡିଓ କଲ୍ ଗ୍ରହଣ କରିବେ କି?")) {
+                    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+                        localStream = stream;
+                        document.getElementById('local-video').srcObject = stream;
+                        call.answer(stream);
+                        call.on('stream', remoteStream => {
+                            document.getElementById('remote-video').srcObject = remoteStream;
+                        });
+                        currentCall = call;
+                    });
+                }
+            });
+        }
+
+        function generateQRCode(id) {
+            document.getElementById("qrcode").innerHTML = "";
+            new QRCode(document.getElementById("qrcode"), {
+                text: id,
+                width: 128,
+                height: 128,
+                colorDark: "#0f172a",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function connectWithPin() {
+            const pinInput = document.getElementById('partner-6digit-pin').value.trim();
+            if (pinInput.length !== 6) return alert("ଦୟାକରି ସଠିକ୍ ୬-ଅଙ୍କର PIN ଦିଅନ୍ତୁ!");
+            const targetPeerId = "lovesync_" + pinInput;
+            conn = peer.connect(targetPeerId);
+            setupConnection();
+            alert("କନେକ୍ଟ ହେବାକୁ ଚେଷ୍ଟା କରୁଛି...");
+        }
+
+        function setupConnection() {
+            conn.on('data', data => {
+                appendMessage(data, 'received');
+            });
+        }
+
+        function copyMyPin() {
+            const pinBox = document.getElementById('my-6digit-pin');
+            pinBox.select();
+            navigator.clipboard.writeText(pinBox.value);
+            alert("୬-ଅଙ୍କ PIN କପି ହୋଇଗଲା!");
+        }
+
+        function startScanner() {
+            const scannerDiv = document.getElementById('reader');
+            scannerDiv.classList.remove('hide');
+            const html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 200, height: 200 } },
+                qrCodeMessage => {
+                    // Extract 6-digit pin if full peer id was scanned
+                    const parts = qrCodeMessage.split("_");
+                    const scannedPin = parts.length > 1 ? parts[1] : qrCodeMessage;
+                    document.getElementById('partner-6digit-pin').value = scannedPin;
+                    html5QrCode.stop();
+                    scannerDiv.classList.add('hide');
+                    connectWithPin();
+                },
+                errorMessage => {}
+            ).catch(err => {
+                alert("କ୍ୟାମେରା ଆକ୍ସେସ୍ ମିଳିଲା ନାହିଁ!");
+            });
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            if (conn) {
+                conn.send(text);
+                appendMessage(text, 'sent');
+                input.value = '';
+            } else {
+                alert("ପ୍ରଥମେ ସାଥୀଙ୍କ ସହ କନେକ୍ଟ କରନ୍ତୁ!");
+            }
+        }
+
+        function appendMessage(text, type) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            div.className = `flex ${type === 'sent' ? 'justify-end' : 'justify-start'} mb-1`;
+            div.innerHTML = `<div class="max-w-[75%] px-3 py-2 rounded-xl text-xs ${type === 'sent' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-200'}">${text}</div>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function startVideoCall() {
+            const pinInput = document.getElementById('partner-6digit-pin').value.trim();
+            if (pinInput.length !== 6) return alert("ସାଥୀଙ୍କ ୬-ଅଙ୍କ PIN ଦିଅନ୍ତୁ!");
+            const targetPeerId = "lovesync_" + pinInput;
+            
+            const constraints = {
+                video: { facingMode: useFrontCamera ? "user" : "environment" },
+                audio: true
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+                localStream = stream;
+                document.getElementById('local-video').srcObject = stream;
+                const call = peer.call(targetPeerId, stream);
+                call.on('stream', remoteStream => {
+                    document.getElementById('remote-video').srcObject = remoteStream;
+                });
+                currentCall = call;
+            }).catch(err => alert("କ୍ୟାମେରା/ମାଇକ୍ ଅନୁମତି ଆବଶ୍ୟକ!"));
+        }
+
+        function toggleMic() {
+            if (!localStream) return alert("କୌଣସି ଆକ୍ଟିଭ୍ କଲ୍ ନାହିଁ!");
+            isMicMuted = !isMicMuted;
+            localStream.getAudioTracks().forEach(track => track.enabled = !isMicMuted);
+            const btn = document.getElementById('mic-btn');
+            btn.innerHTML = isMicMuted ? '<i class="fa-solid fa-microphone-slash text-rose-400"></i>' : '<i class="fa-solid fa-microphone"></i>';
+            btn.classList.toggle('bg-rose-600/20', isMicMuted);
+        }
+
+        function toggleCam() {
+            if (!localStream) return alert("କୌଣସି ଆକ୍ଟିଭ୍ କଲ୍ ନାହିଁ!");
+            isCamOff = !isCamOff;
+            localStream.getVideoTracks().forEach(track => track.enabled = !isCamOff);
+            const btn = document.getElementById('cam-btn');
+            btn.innerHTML = isCamOff ? '<i class="fa-solid fa-video text-rose-400"></i>' : '<i class="fa-solid fa-video-slash"></i>';
+            btn.classList.toggle('bg-rose-600/20', isCamOff);
+        }
+
+        function flipCamera() {
+            useFrontCamera = !useFrontCamera;
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            const constraints = {
+                video: { facingMode: useFrontCamera ? "user" : "environment" },
+                audio: true
+            };
+            navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+                localStream = stream;
+                document.getElementById('local-video').srcObject = stream;
+                if (currentCall && currentCall.peer) {
+                    const videoTrack = stream.getVideoTracks()[0];
+                    const sender = currentCall.peerConnection?.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (sender) sender.replaceTrack(videoTrack);
+                }
+            }).catch(err => alert("କ୍ୟାମେରା ବଦଳାଇବାରେ ସମସ୍ୟା ହେଲା!"));
+        }
+
+        function disconnectCall() {
+            if (currentCall) {
+                currentCall.close();
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            document.getElementById('local-video').srcObject = null;
+            document.getElementById('remote-video').srcObject = null;
+            alert("କଲ୍ ବିଚ୍ଛିନ୍ନ ହୋଇଗଲା।");
+        }
+
+        // Intimate Game Logic
+        const gameDB = {
+            truth: [
+                { text: "ଆମର ସମ୍ପର୍କ ବିଷୟରେ ଆପଣଙ୍କର ସବୁଠାରୁ ଗଭୀର କଳ୍ପନା କଣ?", icon: "fa-solid fa-face-flushed" },
+                { text: "ମୋର କେଉଁ ପୋଷାକ ଆପଣଙ୍କୁ ସବୁଠାରୁ ଅଧିକ ଭଲ ଲାଗେ?", icon: "fa-solid fa-shirt" },
+                { text: "ଆପଣ କେବେ ଜାଣିଥିଲେ ଯେ ଆପଣ ମୋତେ ପ୍ରେମ କରୁଛନ୍ତି?", icon: "fa-solid fa-heart-circle-check" },
+                { text: "ଯଦି ଆମେ ଏବେ ଏକାଠି ରୁମ୍ ରେ ବନ୍ଦ ଥାଆନ୍ତୁ, ଆପଣ କଣ କରିଥା'ନ୍ତେ?", icon: "fa-solid fa-door-closed" }
+            ],
+            dare: [
+                { text: "ମୋତେ ୧୦ ସେକେଣ୍ଡର ଏକ ଭଏସ୍ ନୋଟ୍ ପଠାନ୍ତୁ ଯେଉଁଥିରେ ଆପଣ ମୋତେ କେତେ ଭଲ ପାଆନ୍ତି କହିବେ।", icon: "fa-solid fa-microphone-lines" },
+                { text: "କ୍ୟାମେରା ଅନ୍ କରି ଗୋଟିଏ ପ୍ରେମଭରା ଫ୍ଲାଇଙ୍ଗ୍ କିସ୍ ଦିଅନ୍ତୁ।", icon: "fa-solid fa-face-kiss-wink-heart" },
+                { text: "ମୋର ଶରୀରର କେଉଁ ଅଂଶଟି ଆପଣଙ୍କୁ ସବୁଠାରୁ ସୁନ୍ଦର ଲାଗେ, ବର୍ଣ୍ଣନା କରନ୍ତୁ।", icon: "fa-solid fa-hand-holding-heart" },
+                { text: "ଆଖି ବନ୍ଦ କରି ୧ ମିନିଟ୍ ପାଇଁ ଆମର ଆଗାମୀ ସୁନ୍ଦର ରାତି କଳ୍ପନା କରନ୍ତୁ।", icon: "fa-solid fa-moon" }
+            ]
+        };
+
+        function drawGameCard(type) {
+            const list = gameDB[type];
+            const item = list[Math.floor(Math.random() * list.length)];
+            document.getElementById('game-category').innerText = (type === 'truth' ? 'ସତ୍ୟ କାର୍ଡ' : 'ସାହସ କାର୍ଡ');
+            document.getElementById('game-question').innerText = item.text;
+            document.getElementById('game-icon-container').innerHTML = `<i class="${item.icon}"></i>`;
+        }
+    </script>
+</body>
+</html>
